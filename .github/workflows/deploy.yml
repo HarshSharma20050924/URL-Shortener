@@ -9,7 +9,7 @@ env:
   ECR_REPOSITORY: url-shortener-repo
   ECS_SERVICE: url-shortener-service
   ECS_CLUSTER: url-shortener-cluster
-  ECS_TASK_DEFINITION: terraform/ecs.tf # Simple path for demo
+  ECS_TASK_DEFINITION: task-definition.json
 
 jobs:
   deploy:
@@ -43,7 +43,7 @@ jobs:
       id: task-def
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
-        task-definition: task-definition.json
+        task-definition: ${{ env.ECS_TASK_DEFINITION }}
         container-name: server
         image: ${{ steps.build-image.outputs.image }}
 
