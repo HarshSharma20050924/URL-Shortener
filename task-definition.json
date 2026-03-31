@@ -38,5 +38,5 @@
   ],
   "cpu": "256",
   "memory": "512",
-  "executionRoleArn": "arn:aws:iam::${ENTITY_ID}:role/ecsTaskExecutionRole"
+  "executionRoleArn": "arn:aws:iam::951411650902:role/url-shortener-ecs-execution-role"
 }
