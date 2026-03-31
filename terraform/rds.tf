@@ -13,7 +13,19 @@ resource "aws_db_instance" "postgres" {
   db_name              = "urlshortener"
   username             = "dbuser"
   password             = "securepassword123" # Use AWS Secrets Manager in real production
-  db_subnet_group_name = aws_db_subnet_group.db_group.name
-  skip_final_snapshot  = true
-  multi_az             = false # Set to true for production high availability
+  db_subnet_group_name    = aws_db_subnet_group.db_group.name
+  vpc_security_group_ids  = [aws_security_group.db_sg.id]
+  skip_final_snapshot     = true
+  multi_az                = false 
+}
+
+resource "aws_security_group" "db_sg" {
+  name   = "url-shortener-db-sg"
+  vpc_id = aws_vpc.main.id
+  ingress {
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [aws_security_group.app_sg.id]
+  }
 }
