@@ -15,6 +15,6 @@ output "db_password" {
   sensitive = true
 }
 
-output "db_name" {
-  value = aws_db_instance.postgres.db_name
+output "app_url" {
+  value = "http://${aws_lb.main.dns_name}"
 }

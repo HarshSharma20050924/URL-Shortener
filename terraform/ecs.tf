@@ -36,19 +36,28 @@ resource "aws_ecs_service" "main" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = aws_subnet.private[*].id
-    security_groups = [aws_security_group.app_sg.id]
+    subnets          = aws_subnet.private[*].id
+    security_groups  = [aws_security_group.app_sg.id]
+    assign_public_ip = false
   }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.app.arn
+    container_name   = "server"
+    container_port   = 5000
+  }
+
+  depends_on = [aws_lb_listener.http]
 }
 
 resource "aws_security_group" "app_sg" {
   name   = "url-shortener-app-sg"
   vpc_id = aws_vpc.main.id
   ingress {
-    from_port   = 5000
-    to_port     = 5000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port       = 5000
+    to_port         = 5000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb_sg.id]
   }
 
   egress {
