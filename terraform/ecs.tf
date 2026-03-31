@@ -9,6 +9,7 @@ resource "aws_ecs_task_definition" "app" {
   requires_compatibilities = ["FARGATE"]
   cpu                      = "256"
   memory                   = "512"
+  execution_role_arn       = aws_iam_role.ecs_execution.arn
 
   container_definitions = jsonencode([
     {
@@ -17,8 +18,10 @@ resource "aws_ecs_task_definition" "app" {
       essential = true
       portMappings = [{ containerPort = 5000 }]
       environment = [
-        { name = "DATABASE_URL", value = "postgresql://admin:password@host/db" },
-        { name = "REDIS_URL", value = "redis://host:6379" }
+        { name = "DATABASE_URL", value = "postgresql://${aws_db_instance.postgres.username}:${aws_db_instance.postgres.password}@${aws_db_instance.postgres.endpoint}/${aws_db_instance.postgres.db_name}" },
+        { name = "REDIS_URL", value = "redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}:6379" },
+        { name = "PORT", value = "5000" },
+        { name = "NODE_ENV", value = "production" }
       ]
     }
   ])
