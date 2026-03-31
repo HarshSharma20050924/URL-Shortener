@@ -14,7 +14,7 @@ resource "aws_ecs_task_definition" "app" {
   container_definitions = jsonencode([
     {
       name      = "server"
-      image     = "YOUR_ECR_REPO_URL:latest" # Updated by GitHub Actions
+      image     = "${aws_ecr_repository.app.repository_url}:latest"
       essential = true
       portMappings = [{ containerPort = 5000 }]
       environment = [
