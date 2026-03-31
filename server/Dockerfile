@@ -31,4 +31,4 @@ COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 5000
 
-CMD ["npm", "run", "start"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && npm run start"]
