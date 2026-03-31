@@ -21,6 +21,14 @@
         {
           "name": "NODE_ENV",
           "value": "production"
+        },
+        {
+          "name": "DATABASE_URL",
+          "value": "postgresql://dbuser:securepassword123@url-shortener-db.c30gg8kw6z7s.eu-central-1.rds.amazonaws.com:5432/urlshortener"
+        },
+        {
+          "name": "REDIS_URL",
+          "value": "redis://url-shortener-cache.t28cam.0001.euc1.cache.amazonaws.com:6379"
         }
       ],
       "logConfiguration": {
