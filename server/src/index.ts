@@ -13,15 +13,15 @@ const urlController = new UrlController();
 app.use(cors());
 app.use(express.json());
 
-// Routes
-app.post('/api/shorten', (req, res) => urlController.create(req, res));
-app.get('/:shortCode', (req, res) => urlController.redirect(req, res));
-app.get('/api/stats/:shortCode', (req, res) => urlController.getStats(req, res));
-
-// Health Check
+// Health Check - must be before wildcard route
 app.get('/health', (req, res) => {
     res.json({ status: 'UP', timestamp: new Date().toISOString() });
 });
+
+// Routes
+app.post('/api/shorten', (req, res) => urlController.create(req, res));
+app.get('/api/stats/:shortCode', (req, res) => urlController.getStats(req, res));
+app.get('/:shortCode', (req, res) => urlController.redirect(req, res));
 
 app.listen(PORT, () => {
     logger.info(`🚀 Server running on http://localhost:${PORT}`);
