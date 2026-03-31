@@ -1,0 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-color: #09090b;
+  --surface-color: rgba(24, 24, 27, 0.6);
+  --border-color: rgba(63, 63, 70, 0.4);
+  --accent-color: #bef264;
+  --accent-hover: #d9f99d;
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --glass-blur: 12px;
+  
+  --font-main: 'Inter', sans-serif;
+  --font-heading: 'Poppins', sans-serif;
+}
+
+body {
+  @apply bg-zinc-950 text-white font-sans antialiased overflow-x-hidden;
+}
+
+.glass {
+  @apply bg-zinc-900/60 backdrop-blur-xl border border-zinc-800/50 shadow-2xl;
+}
+
+.accent-text {
+  color: var(--accent-color);
+}
+
+.btn-primary {
+  @apply bg-accent hover:bg-accent-hover text-zinc-950 px-6 py-3 rounded-2xl font-bold transition-all duration-300;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-zinc-950;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-zinc-800 rounded-full hover:bg-zinc-700 transition-all;
+}

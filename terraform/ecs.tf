@@ -1,0 +1,50 @@
+resource "aws_ecs_cluster" "main" {
+  name = "url-shortener-cluster"
+}
+
+# ECS Task Definition (Fargate - Serverless)
+resource "aws_ecs_task_definition" "app" {
+  family                   = "url_shortener_task"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "256"
+  memory                   = "512"
+
+  container_definitions = jsonencode([
+    {
+      name      = "server"
+      image     = "YOUR_ECR_REPO_URL:latest" # Updated by GitHub Actions
+      essential = true
+      portMappings = [{ containerPort = 5000 }]
+      environment = [
+        { name = "DATABASE_URL", value = "postgresql://admin:password@host/db" },
+        { name = "REDIS_URL", value = "redis://host:6379" }
+      ]
+    }
+  ])
+}
+
+# ECS Service to run and scale the tasks
+resource "aws_ecs_service" "main" {
+  name            = "url-shortener-service"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.app.arn
+  desired_count   = 2 # High Availability (2 copies running)
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets         = aws_subnet.private[*].id
+    security_groups = [aws_security_group.app_sg.id]
+  }
+}
+
+resource "aws_security_group" "app_sg" {
+  name   = "url-shortener-app-sg"
+  vpc_id = aws_vpc.main.id
+  ingress {
+    from_port   = 5000
+    to_port     = 5000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Should be restricted to LB in real prod
+  }
+}
