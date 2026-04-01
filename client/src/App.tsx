@@ -4,7 +4,7 @@ import { Link2, Copy, BarChart3, Scissors, Check, ExternalLink, Sparkles, Zap, S
 import axios from 'axios';
 import './index.css';
 
-const API_BASE = 'http://localhost:5000';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // Confetti component for success celebration 🎉
 const Confetti = () => {

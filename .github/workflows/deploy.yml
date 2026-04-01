@@ -10,6 +10,8 @@ env:
   ECS_SERVICE: url-shortener-service
   ECS_CLUSTER: url-shortener-cluster
   ECS_TASK_DEFINITION: task-definition.json
+  S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+  VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
 jobs:
   deploy:
@@ -54,3 +56,10 @@ jobs:
         service: ${{ env.ECS_SERVICE }}
         cluster: ${{ env.ECS_CLUSTER }}
         wait-for-service-stability: false
+
+    - name: Build and Deploy Frontend
+      run: |
+        cd client
+        npm install
+        VITE_API_URL=${{ env.VITE_API_URL }} npm run build
+        aws s3 sync dist/ s3://${{ env.S3_BUCKET_NAME }} --delete
