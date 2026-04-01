@@ -12,10 +12,19 @@ model Url {
   shortCode   String   @unique
   longUrl     String
   clicks      Int      @default(0)
-  userId      String?
+  userId      Int?
+  user        User?    @relation(fields: [userId], references: [id])
   createdAt   DateTime @default(now())
   expiresAt   DateTime?
   isActive    Boolean  @default(true)
 
   @@index([shortCode])
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  urls      Url[]
+  createdAt DateTime @default(now())
 }

@@ -6,7 +6,7 @@ import logger from '../utils/Logger';
 const urlRepo = new UrlRepository();
 
 export class UrlService {
-    async shortenUrl(longUrl: string, customAlias?: string, userId?: string) {
+    async shortenUrl(longUrl: string, customAlias?: string, userId?: number) {
         let shortCode = customAlias;
 
         if (shortCode) {
@@ -58,5 +58,9 @@ export class UrlService {
         }
 
         return null;
+    }
+
+    async getUserUrls(userId: number) {
+        return await urlRepo.findByUserId(userId);
     }
 }

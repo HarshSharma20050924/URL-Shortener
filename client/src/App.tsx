@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
-import { Link2, Copy, BarChart3, Scissors, Check, ExternalLink, Sparkles, Zap, Shield } from 'lucide-react';
+import { Link2, Copy, BarChart3, Scissors, Check, ExternalLink, Sparkles, Zap, Shield, LogOut, User, History, X } from 'lucide-react';
 import axios from 'axios';
 import './index.css';
 
@@ -91,6 +91,16 @@ function App() {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
   const [showConfetti, setShowConfetti] = useState(false);
+  
+  // Auth State
+  const [user, setUser] = useState<any>(JSON.parse(localStorage.getItem('user') || 'null'));
+  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [myUrls, setMyUrls] = useState<any[]>([]);
+
   const controls = useAnimation();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -102,6 +112,52 @@ function App() {
     }
   }, [result, controls]);
 
+  useEffect(() => {
+    if (token) {
+      fetchMyUrls();
+    }
+  }, [token]);
+
+  const fetchMyUrls = async () => {
+    try {
+      const { data } = await axios.get(`${API_BASE}/api/my-urls`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMyUrls(data);
+    } catch (err) {
+      console.error('Failed to fetch URLs');
+    }
+  };
+
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/signup';
+      const { data } = await axios.post(`${API_BASE}${endpoint}`, { email, password });
+      setUser(data.user);
+      setToken(data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('token', data.token);
+      setShowAuthModal(false);
+      setEmail('');
+      setPassword('');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Auth failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    setMyUrls([]);
+  };
+
   const handleShorten = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -109,11 +165,13 @@ function App() {
     setResult(null);
 
     try {
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const { data } = await axios.post(`${API_BASE}/api/shorten`, {
         longUrl,
         customAlias: customAlias || undefined
-      });
+      }, { headers });
       setResult(data);
+      if (token) fetchMyUrls();
     } catch (err: any) {
       setError(err.response?.data?.error || 'Something went wrong');
       controls.start({ x: [-10, 10, -10, 10, 0], transition: { duration: 0.3 } });
@@ -122,13 +180,36 @@ function App() {
     }
   };
 
-  const copyToClipboard = async () => {
-    if (result) {
-      const shortUrl = `${API_BASE}/${result.shortCode || result.short_url}`;
-      await navigator.clipboard.writeText(shortUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  const copyToClipboard = async (text?: string) => {
+    const urlToCopy = text || `${API_BASE}/${result.shortCode || result.short_url}`;
+    
+    try {
+      // Modern API (Requires HTTPS or localhost)
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(urlToCopy);
+      } else {
+        throw new Error('Clipboard API unavailable');
+      }
+    } catch (err) {
+      // Fallback for HTTP
+      const textArea = document.createElement("textarea");
+      textArea.value = urlToCopy;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      textArea.style.top = "-999999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+      } catch (err) {
+        console.error('Fallback copy failed', err);
+      }
+      document.body.removeChild(textArea);
     }
+    
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const features = [
@@ -156,6 +237,49 @@ function App() {
     <div className="min-h-screen relative overflow-hidden bg-zinc-950 text-white">
       <BackgroundGrid />
       {showConfetti && <Confetti />}
+
+      {/* Navigation Header */}
+      <nav className="relative z-50 container mx-auto px-4 py-6 flex justify-between items-center">
+        <motion.div 
+          className="flex items-center gap-2 font-bold text-2xl tracking-tighter"
+          whileHover={{ scale: 1.05 }}
+        >
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-[#bef264] to-[#22d3ee] flex items-center justify-center text-zinc-950">
+            <Link2 size={24} />
+          </div>
+          <span className="bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">TINKY</span>
+        </motion.div>
+
+        <div className="flex items-center gap-4">
+          {user ? (
+            <div className="flex items-center gap-3 bg-zinc-900/80 backdrop-blur-md border border-zinc-800 rounded-2xl px-4 py-2">
+              <div className="w-8 h-8 rounded-full bg-[#bef264]/20 flex items-center justify-center text-[#bef264]">
+                <User size={16} />
+              </div>
+              <span className="text-sm font-medium text-zinc-300 hidden md:inline">{user.email}</span>
+              <button 
+                onClick={logout}
+                className="text-zinc-500 hover:text-rose-400 transition-colors p-1"
+                title="Logout"
+              >
+                <LogOut size={18} />
+              </button>
+            </div>
+          ) : (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                setAuthMode('login');
+                setShowAuthModal(true);
+              }}
+              className="px-6 py-2.5 rounded-2xl bg-zinc-900 border border-zinc-800 text-sm font-semibold hover:border-[#bef264]/50 transition-all"
+            >
+              Log In
+            </motion.button>
+          )}
+        </div>
+      </nav>
 
       <main className="container mx-auto px-4 pt-16 pb-20 relative z-10">
         {/* Hero Section */}
@@ -332,7 +456,7 @@ function App() {
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={copyToClipboard}
+                        onClick={() => copyToClipboard()}
                         className={`p-2.5 rounded-xl transition-all duration-200 ${
                           copied 
                             ? 'bg-[#bef264]/20 text-[#bef264]' 
@@ -431,6 +555,52 @@ function App() {
           ))}
         </div>
 
+        {/* My URLs Section (Dashboard) */}
+        {token && myUrls.length > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-24 max-w-6xl mx-auto"
+          >
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-10 h-10 rounded-xl bg-[#22d3ee]/10 flex items-center justify-center text-[#22d3ee]">
+                <History size={20} />
+              </div>
+              <h3 className="text-2xl font-bold">Your Recent Links</h3>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              {myUrls.map((url) => (
+                <motion.div 
+                  key={url.id}
+                  whileHover={{ x: 10 }}
+                  className="glass p-4 rounded-2xl bg-zinc-900/40 border border-zinc-800/50 flex flex-col md:flex-row items-center justify-between gap-4"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[#bef264] font-mono font-medium mb-1 truncate">
+                      {API_BASE}/{url.shortCode}
+                    </p>
+                    <p className="text-zinc-500 text-sm truncate">{url.longUrl}</p>
+                  </div>
+                  <div className="flex items-center gap-6 text-sm">
+                    <div className="flex flex-col items-center">
+                      <span className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest">Clicks</span>
+                      <span className="font-bold text-white">{url.clicks}</span>
+                    </div>
+                    <div className="h-8 w-px bg-zinc-800" />
+                    <button 
+                      onClick={() => copyToClipboard(`${API_BASE}/${url.shortCode}`)}
+                      className="p-2.5 rounded-xl bg-zinc-800/50 text-zinc-400 hover:text-[#bef264] transition-colors"
+                    >
+                      <Copy size={18} />
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
         {/* CTA Section */}
         <motion.div 
           initial={{ opacity: 0 }}
@@ -470,6 +640,88 @@ function App() {
           &bull; 2026
         </motion.p>
       </footer>
+
+      {/* Auth Modal */}
+      <AnimatePresence>
+        {showAuthModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowAuthModal(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-3xl p-8 shadow-2xl"
+            >
+              <button 
+                onClick={() => setShowAuthModal(false)}
+                className="absolute top-6 right-6 text-zinc-500 hover:text-white"
+              >
+                <X size={20} />
+              </button>
+
+              <h2 className="text-3xl font-bold mb-2">
+                {authMode === 'login' ? 'Welcome Back' : 'Create Account'}
+              </h2>
+              <p className="text-zinc-500 mb-8">
+                {authMode === 'login' 
+                  ? 'Access your dashboard and track your links.' 
+                  : 'Join Tinky today and start shortening.'}
+              </p>
+
+              <form onSubmit={handleAuth} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-400 mb-2">Email Address</label>
+                  <input 
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-5 focus:outline-none focus:border-[#bef264]/50"
+                    placeholder="name@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-400 mb-2">Password</label>
+                  <input 
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-5 focus:outline-none focus:border-[#bef264]/50"
+                    placeholder="••••••••"
+                  />
+                </div>
+                
+                {error && <p className="text-rose-400 text-sm text-center">{error}</p>}
+
+                <button 
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#bef264] to-[#22d3ee] text-zinc-950 font-bold text-lg mt-4 disabled:opacity-50"
+                >
+                  {loading ? 'Processing...' : (authMode === 'login' ? 'Log In' : 'Sign Up')}
+                </button>
+              </form>
+
+              <p className="text-center mt-8 text-zinc-500 text-sm">
+                {authMode === 'login' ? "Don't have an account? " : "Already have an account? "}
+                <button 
+                  onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+                  className="text-[#bef264] font-bold hover:underline"
+                >
+                  {authMode === 'login' ? 'Sign Up' : 'Log In'}
+                </button>
+              </p>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -1,12 +1,14 @@
 import { Request, Response } from 'express';
 import { UrlService } from '../services/UrlService';
+import { AuthRequest } from '../middlewares/AuthMiddleware';
 import logger from '../utils/Logger';
 
 const urlService = new UrlService();
 
 export class UrlController {
-    async create(req: Request, res: Response) {
-        const { longUrl, customAlias, userId } = req.body;
+    async create(req: AuthRequest, res: Response) {
+        const { longUrl, customAlias } = req.body;
+        const userId = req.userId; // From authenticate middleware
         
         if (!longUrl) {
             return res.status(400).json({ error: 'longUrl is required' });
@@ -44,5 +46,19 @@ export class UrlController {
         // Logic to get stats (could be from analytic service)
         // For simplicity, we just return the full row
         return res.json({ message: 'Stats logic would go here' });
+    }
+
+    async getUserUrls(req: AuthRequest, res: Response) {
+        const userId = req.userId;
+        if (!userId) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+        try {
+            const urls = await urlService.getUserUrls(userId);
+            return res.json(urls);
+        } catch (error) {
+            logger.error(error);
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
     }
 }
