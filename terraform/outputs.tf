@@ -18,3 +18,7 @@ output "db_password" {
 output "app_url" {
   value = "http://${aws_lb.main.dns_name}"
 }
+
+output "client_url" {
+  value = "http://${aws_s3_bucket_website_configuration.client.website_endpoint}"
+}
